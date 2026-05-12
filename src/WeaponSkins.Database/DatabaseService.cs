@@ -1,4 +1,5 @@
 using System.Data;
+using System.Runtime.Loader;
 
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.Initialization;
@@ -100,8 +101,27 @@ public partial class DatabaseService : IStorageProvider
     private FreeSqlBuilder GetBuilder(DataType protocol, string connectionString)
     {
         var builder = new FreeSqlBuilder();
-        builder.UseConnectionString(protocol, connectionString);
+        builder.UseConnectionString(protocol, connectionString, GetProviderType(protocol));
         builder.UseAdoConnectionPool(true);
         return builder;
+    }
+
+    // FreeSql uses Type.GetType() which fails in isolated plugin ALCs.
+    // We resolve the provider type from the current ALC instead.
+    private static Type? GetProviderType(DataType protocol)
+    {
+        var (assemblyName, typeName) = protocol switch
+        {
+            DataType.MySql => ("FreeSql.Provider.MySql", "FreeSql.MySqlProvider`1"),
+            DataType.PostgreSQL => ("FreeSql.Provider.PostgreSQL", "FreeSql.PostgreSQLProvider`1"),
+            DataType.Sqlite => ("FreeSql.Provider.Sqlite", "FreeSql.SqliteProvider`1"),
+            _ => (null, null)
+        };
+
+        if (assemblyName is null || typeName is null) return null;
+
+        var alc = AssemblyLoadContext.GetLoadContext(typeof(DatabaseService).Assembly);
+        var asm = alc?.Assemblies.FirstOrDefault(a => a.GetName().Name == assemblyName);
+        return asm?.GetType(typeName);
     }
 }

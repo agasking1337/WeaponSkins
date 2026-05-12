@@ -1,3 +1,4 @@
+using System.Globalization;
 
 using FreeSql.DataAnnotations;
 
@@ -44,18 +45,26 @@ public record SkinModel
 
     [Column(Name = "weapon_keychain")] public string Keychain { get; set; } = "0;0;0;0;0";
 
-    private static StickerData ToStickerModel(string sticker)
+    private static StickerData? ToStickerModel(string sticker)
     {
         var parts = sticker.Split(';');
+        var id = int.Parse(parts[0]);
+        if (id == 0) return null;
+        var scale = float.Parse(parts[5], CultureInfo.InvariantCulture);
+        var schema = int.Parse(parts[1]);
+        var offsetX = float.Parse(parts[2], CultureInfo.InvariantCulture);
+        var offsetY = float.Parse(parts[3], CultureInfo.InvariantCulture);
+        if (schema == 0 && offsetX == 0f && offsetY == 0f)
+            schema = 1337;
         return new StickerData
         {
-            Id = int.Parse(parts[0]),
-            Schema = int.Parse(parts[1]),
-            OffsetX = float.Parse(parts[2]),
-            OffsetY = float.Parse(parts[3]),
-            Wear = float.Parse(parts[4]),
-            Scale = float.Parse(parts[5]),
-            Rotation = float.Parse(parts[6]),
+            Id = id,
+            Schema = schema,
+            OffsetX = offsetX,
+            OffsetY = offsetY,
+            Wear = float.Parse(parts[4], CultureInfo.InvariantCulture),
+            Scale = scale == 0f ? 1f : scale,
+            Rotation = float.Parse(parts[6], CultureInfo.InvariantCulture),
         };
     }
 
@@ -63,18 +72,20 @@ public record SkinModel
     {
         if (sticker == null) return "0;0;0;0;0;0;0";
         return
-            $"{sticker.Id};{sticker.Schema};{sticker.OffsetX};{sticker.OffsetY};{sticker.Wear};{sticker.Scale};{sticker.Rotation}";
+            $"{sticker.Id};{sticker.Schema};{sticker.OffsetX.ToString(CultureInfo.InvariantCulture)};{sticker.OffsetY.ToString(CultureInfo.InvariantCulture)};{sticker.Wear.ToString(CultureInfo.InvariantCulture)};{sticker.Scale.ToString(CultureInfo.InvariantCulture)};{sticker.Rotation.ToString(CultureInfo.InvariantCulture)}";
     }
 
-    private static KeychainData ToKeychainModel(string keychain)
+    private static KeychainData? ToKeychainModel(string keychain)
     {
         var parts = keychain.Split(';');
+        var id = int.Parse(parts[0]);
+        if (id == 0) return null;
         return new KeychainData
         {
-            Id = int.Parse(parts[0]),
-            OffsetX = float.Parse(parts[1]),
-            OffsetY = float.Parse(parts[2]),
-            OffsetZ = float.Parse(parts[3]),
+            Id = id,
+            OffsetX = float.Parse(parts[1], CultureInfo.InvariantCulture),
+            OffsetY = float.Parse(parts[2], CultureInfo.InvariantCulture),
+            OffsetZ = float.Parse(parts[3], CultureInfo.InvariantCulture),
             Seed = int.Parse(parts[4]),
         };
     }
@@ -82,7 +93,7 @@ public record SkinModel
     private static string FromKeychainModel(KeychainData? keychain)
     {
         if (keychain == null) return "0;0;0;0;0";
-        return $"{keychain.Id};{keychain.OffsetX};{keychain.OffsetY};{keychain.OffsetZ};{keychain.Seed}";
+        return $"{keychain.Id};{keychain.OffsetX.ToString(CultureInfo.InvariantCulture)};{keychain.OffsetY.ToString(CultureInfo.InvariantCulture)};{keychain.OffsetZ.ToString(CultureInfo.InvariantCulture)};{keychain.Seed}";
     }
 
     public WeaponSkinData ToDataModel()
