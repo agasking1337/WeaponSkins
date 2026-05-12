@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__swiftlys2-docs__search_docs"
+    ]
+  }
+}

@@ -487,29 +487,15 @@ public class EconService
                 
                 modelPath = modelPath.Replace('\\', '/');
 
-                // Ensure the model path starts with characters/models/
-                string fullModelPath = modelPath;
-                if (!fullModelPath.StartsWith("characters/models/", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (fullModelPath.Contains("characters/models/", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var idx = fullModelPath.IndexOf("characters/models/", StringComparison.OrdinalIgnoreCase);
-                        fullModelPath = fullModelPath.Substring(idx);
-                    }
-                }
-                
                 // Ensure .vmdl extension
+                string fullModelPath = modelPath;
                 if (!fullModelPath.EndsWith(".vmdl", StringComparison.OrdinalIgnoreCase))
                 {
                     fullModelPath += ".vmdl";
                 }
-                
-                // Extract the agent name from the path (remove characters/models/ prefix and .vmdl extension)
+
+                // Extract the agent name from the path (strip .vmdl extension for the key)
                 string normalizedPath = fullModelPath;
-                if (normalizedPath.StartsWith("characters/models/", StringComparison.OrdinalIgnoreCase))
-                {
-                    normalizedPath = normalizedPath.Substring("characters/models/".Length);
-                }
                 if (normalizedPath.EndsWith(".vmdl", StringComparison.OrdinalIgnoreCase))
                 {
                     normalizedPath = normalizedPath.Substring(0, normalizedPath.Length - 5);

@@ -76,21 +76,13 @@ public partial class CommandService
 
         var player = context.Sender!;
         var steamId = player.SteamID;
-        var team = player.Controller.Team;
 
-        CCSPlayerInventory? inventory = null;
-        InventoryService.TryGet(steamId, out inventory);
 
         Task.Run(async () =>
         {
             var dbSkins = await DatabaseService.GetSkinsAsync(steamId);
-            dbSkins.ToList().ForEach(skin => DataService.WeaponDataService.StoreSkin(skin));
-
             var dbKnives = await DatabaseService.GetKnifesAsync(steamId);
-            dbKnives.ToList().ForEach(knife => DataService.KnifeDataService.StoreKnife(knife));
-
             var dbGloves = await DatabaseService.GetGlovesAsync(steamId);
-            dbGloves.ToList().ForEach(glove => DataService.GloveDataService.StoreGlove(glove));
 
             var dbMusicKits = await DatabaseService.GetMusicKitsAsync(steamId);
             foreach (var mk in dbMusicKits)
@@ -100,72 +92,25 @@ public partial class CommandService
             foreach (var agent in dbAgents)
                 DataService.AgentDataService.SetAgent(agent.SteamID, agent.Team, agent.AgentIndex);
 
-            List<ushort> teamWeaponDefsToRegive = new();
-            bool shouldRegiveKnife = false;
-            bool shouldRegiveGlove = false;
-
-            if (WeaponSkinGetterAPI.TryGetWeaponSkins(steamId, out var weaponSkins))
-            {
-                InventoryService.UpdateWeaponSkins(steamId, weaponSkins);
-
-                teamWeaponDefsToRegive = weaponSkins
-                    .Where(s => s.Team == team)
-                    .Select(s => s.DefinitionIndex)
-                    .Distinct()
-                    .ToList();
-            }
-
-            if (WeaponSkinGetterAPI.TryGetKnifeSkins(steamId, out var knifeSkins))
-            {
-                InventoryService.UpdateKnifeSkins(steamId, knifeSkins);
-
-                shouldRegiveKnife = knifeSkins.Any(k => k.Team == team);
-            }
-
-            if (WeaponSkinGetterAPI.TryGetGloveSkins(steamId, out var gloveSkins))
-            {
-                InventoryUpdateService.UpdateGloveSkins(gloveSkins);
-
-                shouldRegiveGlove = gloveSkins.Any(g => g.Team == team);
-            }
-
-            if (DataService.MusicKitDataService.TryGetMusicKit(steamId, out var musicKitIndex))
-            {
-                InventoryService.UpdateMusicKit(steamId, musicKitIndex);
-            }
+            var dbSkinsList = dbSkins.ToList();
+            var dbKnivesList = dbKnives.ToList();
+            var dbGlovesList = dbGloves.ToList();
 
             Core.Scheduler.NextWorldUpdate(() =>
             {
                 try
                 {
-                    var pawn = player.PlayerPawn;
-                    if (pawn == null || !pawn.IsValid) return;
-                    if (pawn.WeaponServices == null || !pawn.WeaponServices.IsValid) return;
+                    if (dbSkinsList.Count > 0)
+                        InventoryUpdateService.UpdateWeaponSkins(dbSkinsList);
 
-                    if (teamWeaponDefsToRegive.Count > 0)
-                    {
-                        foreach (var weaponHandle in pawn.WeaponServices.MyWeapons)
-                        {
-                            var weapon = weaponHandle.Value;
-                            if (weapon == null || !weapon.IsValid) continue;
+                    if (dbKnivesList.Count > 0)
+                        InventoryUpdateService.UpdateKnifeSkins(dbKnivesList);
 
-                            var def = (ushort)weapon.AttributeManager.Item.ItemDefinitionIndex;
-                            if (teamWeaponDefsToRegive.Contains(def))
-                            {
-                                player.RegiveWeapon(weapon, def);
-                            }
-                        }
-                    }
+                    if (dbGlovesList.Count > 0)
+                        InventoryUpdateService.UpdateGloveSkins(dbGlovesList);
 
-                    if (shouldRegiveKnife)
-                    {
-                        player.RegiveKnife();
-                    }
-
-                    if (shouldRegiveGlove && inventory != null && inventory.IsValid)
-                    {
-                        player.RegiveGlove(inventory);
-                    }
+                    if (DataService.MusicKitDataService.TryGetMusicKit(steamId, out var musicKitIndex))
+                        InventoryService.UpdateMusicKit(steamId, musicKitIndex);
                 }
                 catch
                 {

@@ -9,6 +9,13 @@ public class AgentDataService
 {
     private readonly ConcurrentDictionary<ulong, ConcurrentDictionary<Team, int>> _playerAgents = new();
     private readonly ConcurrentDictionary<ulong, ConcurrentDictionary<Team, string>> _playerDefaultModels = new();
+    private readonly HashSet<string> _knownAgentModels = new(StringComparer.OrdinalIgnoreCase);
+
+    public void RegisterAgentModel(string modelPath)
+    {
+        if (!string.IsNullOrWhiteSpace(modelPath))
+            _knownAgentModels.Add(modelPath);
+    }
 
     public void SetAgent(ulong steamId,
         Team team,
@@ -23,6 +30,11 @@ public class AgentDataService
         string modelPath)
     {
         if (string.IsNullOrWhiteSpace(modelPath))
+        {
+            return;
+        }
+
+        if (_knownAgentModels.Contains(modelPath))
         {
             return;
         }

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 using SwiftlyS2.Core.Menus.OptionsBase;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Menus;
@@ -30,11 +32,6 @@ public partial class MenuService
         {
             var team = args.Player.Controller.Team;
             DataService.AgentDataService.TryRemoveAgent(args.Player.SteamID, team);
-            if (DataService.AgentDataService.TryGetDefaultModel(args.Player.SteamID, team, out var defaultModel))
-            {
-                ApplyAgentModel(args.Player, defaultModel);
-            }
-
             Api.ResetAgentSkin(args.Player.SteamID, team, true);
 
             return ValueTask.CompletedTask;
@@ -80,11 +77,6 @@ public partial class MenuService
 
                 Api.UpdateAgentSkin(args.Player.SteamID, team, agent.Index, true);
 
-                Core.Scheduler.DelayBySeconds(0.1f, () =>
-                {
-                    ApplyAgentModel(args.Player, agent.ModelPath);
-                });
-
                 return ValueTask.CompletedTask;
             };
 
@@ -123,7 +115,11 @@ public partial class MenuService
                 .ModelState
                 .ModelName;
 
+            Logger.LogInformation($"[AgentModel] current='{current}' target='{modelPath}' agentCount={EconService.Agents.Count}");
+
             var refreshModel = GetRefreshModel(current, modelPath);
+            Logger.LogInformation($"[AgentModel] refreshModel='{refreshModel ?? "NULL"}'");
+
             if (!string.IsNullOrWhiteSpace(refreshModel))
             {
                 pawn.SetModel(refreshModel);
@@ -133,8 +129,11 @@ public partial class MenuService
             Core.Scheduler.NextWorldUpdate(() =>
             {
                 if (!player.IsAlive()) return;
+                Logger.LogInformation($"[AgentModel] applying target='{modelPath}'");
                 pawn.SetModel(modelPath);
+                pawn.CBodyComponentUpdated();
             });
         });
     }
+
 }
