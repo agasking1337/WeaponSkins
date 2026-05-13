@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging;
-
 using SwiftlyS2.Core.Menus.OptionsBase;
 using SwiftlyS2.Shared;
 using SwiftlyS2.Shared.Menus;
@@ -115,10 +113,7 @@ public partial class MenuService
                 .ModelState
                 .ModelName;
 
-            Logger.LogInformation($"[AgentModel] current='{current}' target='{modelPath}' agentCount={EconService.Agents.Count}");
-
             var refreshModel = GetRefreshModel(current, modelPath);
-            Logger.LogInformation($"[AgentModel] refreshModel='{refreshModel ?? "NULL"}'");
 
             if (!string.IsNullOrWhiteSpace(refreshModel))
             {
@@ -129,7 +124,6 @@ public partial class MenuService
             Core.Scheduler.NextWorldUpdate(() =>
             {
                 if (!player.IsAlive()) return;
-                Logger.LogInformation($"[AgentModel] applying target='{modelPath}'");
                 pawn.SetModel(modelPath);
                 pawn.CBodyComponentUpdated();
             });

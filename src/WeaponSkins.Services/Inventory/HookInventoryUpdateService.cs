@@ -126,7 +126,6 @@ public class HookInventoryUpdateService : IInventoryUpdateService
             var current = pawn.CBodyComponent!.SceneNode!.GetSkeletonInstance()
                 .ModelState
                 .ModelName;
-            Logger.LogInformation($"[ApplyAgent] spawn current='{current}'");
             DataService.AgentDataService.CaptureDefaultModel(player.SteamID, player.Controller.Team, current);
 
             if (DataService.AgentDataService.TryGetAgent(player.SteamID, player.Controller.Team, out var agentIndex))
@@ -152,9 +151,7 @@ public class HookInventoryUpdateService : IInventoryUpdateService
             else if (DataService.AgentDataService.TryGetDefaultModel(player.SteamID, player.Controller.Team,
                          out var defaultModel))
             {
-                Logger.LogInformation($"[ApplyAgent] restoring default='{defaultModel}'");
                 var refreshModel = GetRefreshModel(current, defaultModel);
-                Logger.LogInformation($"[ApplyAgent] refreshModel='{refreshModel ?? "NULL"}'");
                 if (!string.IsNullOrWhiteSpace(refreshModel))
                 {
                     pawn.SetModel(refreshModel);
@@ -164,13 +161,8 @@ public class HookInventoryUpdateService : IInventoryUpdateService
                 Core.Scheduler.NextWorldUpdate(() =>
                 {
                     if (!player.IsAlive()) return;
-                    Logger.LogInformation($"[ApplyAgent] applying default='{defaultModel}'");
                     pawn.SetModel(defaultModel);
                 });
-            }
-            else
-            {
-                Logger.LogInformation($"[ApplyAgent] no agent and no default stored — skipping");
             }
         });
     }
